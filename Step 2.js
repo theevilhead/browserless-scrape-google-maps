@@ -18,7 +18,6 @@ const SELECTORS = {
   NAME: '.qBF1Pd.fontHeadlineSmall',
   RATINGS: '.ZkP5Je',
   PRICE: '.wcldff.fontHeadlineSmall.Cbys4b',
-  PLACE_TYPE: '.UaQhfb.fontBodyMedium .W4Efsd',
   LINK: '.hfpxzc',
   IMAGE: '.FQ2IWe.p0Hhde'
 }
@@ -41,11 +40,10 @@ const getData = async (page) => {
       const name = (place.querySelector(SELECTORS.NAME)?.textContent || '').trim();
       const rating = ratingElements[index].textContent;
       const price = (place.querySelector(SELECTORS.PRICE)?.textContent || '').trim();
-      const type = (place.querySelector(SELECTORS.PLACE_TYPE)?.textContent || '').trim();
       const link = (place.querySelector(SELECTORS.LINK)?.href || '');
       const image = (place.querySelector(SELECTORS.IMAGE)?.children[0].src || '');
 
-      places.push({ name, rating, price, type, link, image });
+      places.push({ name, rating, price, link, image });
     })
 
     return places;

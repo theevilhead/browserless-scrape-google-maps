@@ -11,9 +11,9 @@ const MAX_PAGE_COUNT = 10;
 // These are classNames of some of the specific elements in these cards
 const SELECTORS = {
   NAME: '.qBF1Pd.fontHeadlineSmall',
+  LISTING: 'a[href^="https://www.google.com/maps/place/',
   RATINGS: '.ZkP5Je',
   PRICE: '.wcldff.fontHeadlineSmall.Cbys4b',
-  PLACE_TYPE: '.UaQhfb.fontBodyMedium .W4Efsd',
   LINK: '.hfpxzc',
   IMAGE: '.FQ2IWe.p0Hhde',
   NAV_BUTTONS: '.TQbB2b',
@@ -34,56 +34,45 @@ const scrollTillTheEnd = async (page) => {
   do {
     const { _count, _endOfPage } = await page.evaluate((opts) => {
       const { selectors: SELECTORS, count } = opts;
-      const allRatingElements = document.querySelectorAll(SELECTORS.RATINGS);
-      const newItemsCount = (allRatingElements ? allRatingElements.length : 0) - count;
+      const allListings = document.querySelectorAll(SELECTORS.LISTING);
+      const newItemsCount = (allListings ? allListings.length : 0) - count;
       
-      if (allRatingElements && allRatingElements.length) {
-        allRatingElements[allRatingElements.length - 1].scrollIntoView();
+      if (allListings && allListings.length) {
+        allListings[allListings.length - 1].scrollIntoView();
       }
 
       const _endOfPage = newItemsCount > 0;
 
       return {
-        _count: allRatingElements.length,
+        _count: allListings.length,
         _endOfPage
       };
     }, { selectors: SELECTORS, count });
     count = _count;
     endOfPage = _endOfPage;
 
-    try {
-      await page.waitFor(3000);
-    } catch (error) {
-      // We will not do anything with it
-      // Since, we just want to wait either till there are no network request or timeout at 2 seconds
-    }
+    await page.waitForTimeout(3000);
+
   } while (endOfPage);
 }
 
 // Scrapes the data from the page
-// Particularly, listings with ratings
 const getData = async (page, currentPageNum) => {
   return await page.evaluate((opts) => {
     const { selectors: SELECTORS } = opts;
 
-    let ratingElements = Array.from(document.querySelectorAll(SELECTORS.RATINGS));
+    const elements = document.querySelectorAll(SELECTORS.LISTING);
+    const placesElements = Array.from(elements).map(ratingElement => ratingElement.parentElement);
 
-    const placesElement = ratingElements.map(ratingElement => {
-      return ratingElement.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement
-    });
-
-    const places = [];
-
-    placesElement.forEach((place, index) => {
+    const places = placesElements.map((place, index) => {
       // Getting the names
       const name = (place.querySelector(SELECTORS.NAME)?.textContent || '').trim();
-      const rating = ratingElements[index].textContent;
+      const rating = (place.querySelector(SELECTORS.RATINGS)?.textContent || '').trim();
       const price = (place.querySelector(SELECTORS.PRICE)?.textContent || '').trim();
-      const type = (place.querySelector(SELECTORS.PLACE_TYPE)?.textContent || '').trim();
       const link = (place.querySelector(SELECTORS.LINK)?.href || '');
       const image = (place.querySelector(SELECTORS.IMAGE)?.children[0].src || '');
 
-      places.push({ name, rating, price, type, link, image });
+      return { name, rating, price, link, image };
     })
 
     return places;
@@ -117,12 +106,7 @@ const nextPage = async (page, currentPageNum) => {
     return false;
   }
 
-  try {
-    await page.waitFor(3000);
-  } catch (error) {
-    // Ignoring this error
-    console.log(error);
-  }
+  await page.waitForTimeout(3000);
 
   return true;
 }
@@ -151,7 +135,7 @@ const nextPage = async (page, currentPageNum) => {
     await page.keyboard.press('Enter');
 
     // Wait for the page to load results.
-    await page.waitForSelector(SELECTORS.RATINGS);
+    await page.waitForSelector(SELECTORS.LISTING);
 
     let finalData = [];
     let currentPageNum = 0;
@@ -175,16 +159,16 @@ const nextPage = async (page, currentPageNum) => {
 
     } while (moreAvailable);
 
-    // fs.writeFileSync("final.json", JSON.stringify(finalData));
-    // console.log("Final data", finalData.length);
+    fs.writeFileSync("final.json", JSON.stringify(finalData));
+    console.log("Final data", finalData.length);
 
     browser.close();
     console.log(`Completed with ${finalData.length} results`);
-    console.log(finalData);
+    // console.log(finalData);
 
   } catch (error) {
     browser.close();
-    console.log(error)
+    console.log(error);
   }
 
 })();
