@@ -13,41 +13,38 @@ const getBrowser = () => IS_PRODUCTION
   })
   : puppeteer.launch({ headless: false }); // { headless: false } helps visualize and debug the process easily.
 
-// These are class names of some of the specific elements in these cards
+// These are classNames of some of the specific elements in these cards
 const SELECTORS = {
   NAME: '.qBF1Pd.fontHeadlineSmall',
+  LISTING: 'a[href^="https://www.google.com/maps/place/',
   RATINGS: '.ZkP5Je',
   PRICE: '.wcldff.fontHeadlineSmall.Cbys4b',
   LINK: '.hfpxzc',
-  IMAGE: '.FQ2IWe.p0Hhde'
-}
+  IMAGE: '.FQ2IWe.p0Hhde',
+  NAV_BUTTONS: '.TQbB2b',
+};
 
-const getData = async (page) => {
-  return await page.evaluate((SELECTORS) => {
+// Scrapes the data from the page
+const getData = async (page, currentPageNum) => {
+  return await page.evaluate((opts) => {
+    const { selectors: SELECTORS } = opts;
 
-    let ratingElements = Array.from(document.querySelectorAll(SELECTORS.RATINGS));
+    const elements = document.querySelectorAll(SELECTORS.LISTING);
+    const placesElements = Array.from(elements).map(element => element.parentElement);
 
-    // We are getting the root element of the ratings (star element) here
-    // and these are treated as places, all the selector queries will be 
-    // done on this element in stead of the whole document
-    const placesElement = ratingElements.map(ratingElement => {
-      return ratingElement.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement
-    });
-
-    const places = [];
-
-    placesElement.forEach((place, index) => {
+    const places = placesElements.map((place, index) => {
+      // Getting the names
       const name = (place.querySelector(SELECTORS.NAME)?.textContent || '').trim();
-      const rating = ratingElements[index].textContent;
+      const rating = (place.querySelector(SELECTORS.RATINGS)?.textContent || '').trim();
       const price = (place.querySelector(SELECTORS.PRICE)?.textContent || '').trim();
       const link = (place.querySelector(SELECTORS.LINK)?.href || '');
       const image = (place.querySelector(SELECTORS.IMAGE)?.children[0].src || '');
 
-      places.push({ name, rating, price, link, image });
+      return { name, rating, price, link, image };
     })
 
     return places;
-  }, SELECTORS);
+  }, { selectors: SELECTORS, currentPageNum });
 }
 
 (async () => {

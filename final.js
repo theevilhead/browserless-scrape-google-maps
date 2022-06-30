@@ -62,7 +62,7 @@ const getData = async (page, currentPageNum) => {
     const { selectors: SELECTORS } = opts;
 
     const elements = document.querySelectorAll(SELECTORS.LISTING);
-    const placesElements = Array.from(elements).map(ratingElement => ratingElement.parentElement);
+    const placesElements = Array.from(elements).map(element => element.parentElement);
 
     const places = placesElements.map((place, index) => {
       // Getting the names
@@ -164,7 +164,7 @@ const nextPage = async (page, currentPageNum) => {
 
     browser.close();
     console.log(`Completed with ${finalData.length} results`);
-    // console.log(finalData);
+    // console.log(finalData);""
 
   } catch (error) {
     browser.close();
